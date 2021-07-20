@@ -10,6 +10,22 @@ set -e
 #
 ##################################################################################################################
 
+# https://docs.pi-hole.net/main/prerequisites/
+# set firewall rules for pihole
+sudo iptables -I INPUT 1 -s 192.168.0.0/16 -p tcp -m tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 1 -s 127.0.0.0/8 -p tcp -m tcp --dport 53 -j ACCEPT
+sudo iptables -I INPUT 1 -s 127.0.0.0/8 -p udp -m udp --dport 53 -j ACCEPT
+sudo iptables -I INPUT 1 -s 192.168.0.0/16 -p tcp -m tcp --dport 53 -j ACCEPT
+sudo iptables -I INPUT 1 -s 192.168.0.0/16 -p udp -m udp --dport 53 -j ACCEPT
+sudo iptables -I INPUT 1 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp -m tcp --dport 4711 -i lo -j ACCEPT
+sudo iptables -I INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+# ip6
+sudo ip6tables -I INPUT -p udp -m udp --sport 546:547 --dport 546:547 -j ACCEPT
+sudo ip6tables -I INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+
+
 #remove conflicting dnsmasq
 if pacman -Qi dnsmasq &> /dev/null; then
 		sudo pacman -R dnsmasq --noconfirm 
@@ -114,6 +130,22 @@ echo "Extensions pdo_sqlite, sockets, and sqlite3 have be enabled in /etc/php/ph
 echo "Review /etc/php/php.ini"
 echo "Restarting lighttpd service now ..."
 sudo systemctl restart lighttpd.service
+
+
+# as explained in the archwiki page  pihole-FTL.service is likely going to fail.
+# here are some troubleshooting tweaks prescribed in the wiki to fix it
+echo "disabling the stub listener  /etc/systemd/resolved.conf"
+echo "DNSStubListener=no" | sudo tee -a /etc/systemd/resolved.conf 
+ 
+#Tell dnsmasq to bind to each interface explicitly, instead of the wildcard 0.0.0.0:53, by uncommenting the line bind-interfaces in /etc/dnsmasq.conf 
+#This will avoid conflicting with systemd-resolved which listens on 127.0.0.53:53.
+echo "bind-interfaces" | sudo tee -a /etc/dnsmasq.conf
+
+# restart systemd-resolved.service and pihole-FTL.service.
+systemctl  restart systemd-resolved.service 
+systemctl enable pihole-FTL.service
+systemctl start pihole-FTL.service
+
 
 echo "################################################################"
 echo "#########  Pi-Hole has been Configured                   #######"

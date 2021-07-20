@@ -28,7 +28,7 @@ The script provided in this page is intended to automate Pi-hole installation on
 - Peform a fresh install of ArcoLinuxD (for a dedicated Ad-Blocker system), or ArchLinux.
 - Clone this repository to your system 
 ```
-git clone https://github.com/marcoobaid/arch-pihole Pi-hole
+git clone https://github.com/dunganau/arch-pihole Pi-hole
 cd "Pi-hole"
 ./install-pi-hole-server-v1.sh
 ```
